@@ -1,0 +1,67 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+local localPlayer = Players.LocalPlayer
+local mouse = localPlayer:GetMouse()
+
+local holding = false
+local targets = {}
+local index = 1
+local FOV = 250
+local smoothness = 0.12
+
+local function getTargets()
+    local list = {}
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local head = p.Character.Head
+            local pos, vis = Camera:WorldToViewportPoint(head.Position)
+            if vis then
+                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+                if dist <= FOV then
+                    table.insert(list, {part = head, dist = dist})
+                end
+            end
+        end
+    end
+    table.sort(list, function(a,b) return a.dist < b.dist end)
+    return list
+end
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        holding = true
+        targets = getTargets()
+        index = 1
+    end
+
+    if input.KeyCode == Enum.KeyCode.RightControl and holding then
+        if #targets > 0 then
+            index = index + 1
+            if index > #targets then
+                index = 1
+            end
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        holding = false
+        targets = {}
+        index = 1
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if holding and targets[index] and targets[index].part and targets[index].part.Parent then
+        local camPos = Camera.CFrame.Position
+        local targetPos = targets[index].part.Position
+        local newCFrame = CFrame.new(camPos, targetPos)
+        Camera.CFrame = Camera.CFrame:Lerp(newCFrame, smoothness)
+    end
+end)
