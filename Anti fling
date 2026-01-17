@@ -1,0 +1,35 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local maxVel = 60
+local maxAng = 50
+
+local lastSafe
+
+local function protect(char)
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+
+    RunService.RenderStepped:Connect(function()
+        if not hrp or not hum then return end
+
+        if hrp.Velocity.Magnitude > maxVel then
+            hrp.Velocity = Vector3.zero
+        end
+
+        if hrp.RotVelocity.Magnitude > maxAng then
+            hrp.RotVelocity = Vector3.zero
+        end
+
+        if hum.Health <= 0 then
+            hum.Health = hum.MaxHealth
+        end
+    end)
+end
+
+if player.Character then
+    protect(player.Character)
+end
+
+player.CharacterAdded:Connect(protect)
