@@ -1,0 +1,17 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+local tool = Instance.new("Tool")
+tool.Name = "Click TP"
+tool.RequiresHandle = false
+tool.Parent = player.Backpack
+
+tool.Activated:Connect(function()
+    if not mouse.Hit then return end
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+    if not hrp then return end
+    hrp.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0,3,0))
+end)
