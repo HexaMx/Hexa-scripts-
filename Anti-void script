@@ -1,0 +1,75 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local voidY = -80
+local lastSafe
+
+local flyTime = 10
+local flySpeed = 80
+
+local bv, bg, flyConnection
+
+local function startFly(hrp)
+    if flyConnection then return end
+    bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1e9,1e9,1e9)
+    bv.Velocity = Vector3.zero
+    bv.Parent = hrp
+
+    bg = Instance.new("BodyGyro")
+    bg.MaxTorque = Vector3.new(1e9,1e9,1e9)
+    bg.P = 9000
+    bg.D = 500
+    bg.Parent = hrp
+
+    local cam = workspace.CurrentCamera
+    flyConnection = RunService.Heartbeat:Connect(function()
+        local move = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move += Vector3.new(0,-1,0) end
+        bg.CFrame = cam.CFrame
+        bv.Velocity = (move.Magnitude > 0 and move.Unit * flySpeed) or Vector3.zero
+    end)
+
+    task.delay(flyTime,function()
+        if flyConnection then
+            flyConnection:Disconnect()
+            flyConnection = nil
+        end
+        if bv then bv:Destroy() bv = nil end
+        if bg then bg:Destroy() bg = nil end
+    end)
+end
+
+local function init(char)
+    local hum = char:WaitForChild("Humanoid")
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    hum:SetStateEnabled(Enum.HumanoidStateType.Dead,false)
+
+    RunService.RenderStepped:Connect(function()
+        if hrp.Position.Y > voidY then
+            lastSafe = hrp.CFrame
+        else
+            if lastSafe then
+                hum.Health = hum.MaxHealth
+                hrp.CFrame = lastSafe + Vector3.new(0,6,0)
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+                startFly(hrp)
+            end
+        end
+    end)
+end
+
+if player.Character then
+    init(player.Character)
+end
+
+player.CharacterAdded:Connect(init)
