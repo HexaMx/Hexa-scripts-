@@ -1,0 +1,45 @@
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+local highlights = {}
+
+local function addESP(player)
+    if player == localPlayer then return end
+    if not player.Character then return end
+
+    if highlights[player] then highlights[player]:Destroy() end
+
+    local h = Instance.new("Highlight")
+    h.FillColor = Color3.fromRGB(255, 50, 50)
+    h.OutlineColor = Color3.fromRGB(200, 0, 0)
+    h.FillTransparency = 0.6
+    h.OutlineTransparency = 0
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    h.Parent = player.Character
+
+    highlights[player] = h
+end
+
+local function removeESP(player)
+    if highlights[player] then
+        highlights[player]:Destroy()
+        highlights[player] = nil
+    end
+end
+
+for _,p in ipairs(Players:GetPlayers()) do
+    addESP(p)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        addESP(p)
+    end)
+end
+
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        addESP(p)
+    end)
+end)
+
+Players.PlayerRemoving:Connect(removeESP)
