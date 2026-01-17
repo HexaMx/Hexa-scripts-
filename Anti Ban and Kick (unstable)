@@ -1,0 +1,53 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+
+-- Block most kick attempts
+do
+    local mt = getrawmetatable(game)
+    setreadonly(mt,false)
+    local oldNamecall = mt.__namecall
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        if method == "Kick" then
+            return -- ignore all Kick calls
+        end
+        return oldNamecall(self, unpack(args))
+    end)
+    setreadonly(mt,true)
+end
+
+-- Block SetCore("ResetButtonCallback") kicks
+pcall(function()
+    StarterGui:SetCore("ResetButtonCallback", false)
+end)
+
+-- Prevent common anti-exploit detection scripts
+local function blockExploitChecks()
+    -- Example: some scripts check for flying / bodyvelocity / humanoid changes
+    local mt = getrawmetatable(game)
+    setreadonly(mt,false)
+    local oldIndex = mt.__index
+    mt.__index = newcclosure(function(self, key)
+        if key == "Parent" then
+            return nil -- hide some changes from anti-cheat
+        end
+        return oldIndex(self,key)
+    end)
+    setreadonly(mt,true)
+end
+
+blockExploitChecks()
+
+-- Optional: Heartbeat guard (prevents scripts from removing you)
+RunService.Heartbeat:Connect(function()
+    if not player or not player.Character then return end
+    local hum = player.Character:FindFirstChild("Humanoid")
+    if hum and hum.Health <= 0 then
+        hum.Health = hum.MaxHealth
+    end
+end)
