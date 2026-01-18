@@ -1,0 +1,102 @@
+--press E to actiave--
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+local active = false
+local lastDodge = 0
+
+-- Visuals
+local blur = Instance.new("BlurEffect", Lighting)
+blur.Size = 0
+
+local color = Instance.new("ColorCorrectionEffect", Lighting)
+color.Saturation = 0
+color.TintColor = Color3.fromRGB(255,255,255)
+
+-- Settings
+local DETECT_DISTANCE = 20
+local SIDE_DISTANCE = 6
+local UP_DISTANCE = 2
+local DODGE_TIME = 0.18
+local COOLDOWN = 0.9
+
+local function enableObservation()
+	active = true
+	blur.Size = 10
+	color.Saturation = -1
+	color.TintColor = Color3.fromRGB(200,200,200)
+end
+
+local function disableObservation()
+	active = false
+	blur.Size = 0
+	color.Saturation = 0
+	color.TintColor = Color3.fromRGB(255,255,255)
+end
+
+local function enemyInFront()
+	for _,plr in pairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character then
+			local ehrp = plr.Character:FindFirstChild("HumanoidRootPart")
+			if ehrp then
+				local dir = ehrp.Position - hrp.Position
+				local dist = dir.Magnitude
+				if dist <= DETECT_DISTANCE then
+					local dot = hrp.CFrame.LookVector:Dot(dir.Unit)
+					if dot > 0.65 then
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
+local function hoverDodge()
+	if tick() - lastDodge < COOLDOWN then return end
+	lastDodge = tick()
+
+	local side = math.random(0,1) == 0 and -1 or 1
+	local move =
+		(hrp.CFrame.RightVector * SIDE_DISTANCE * side) +
+		Vector3.new(0, UP_DISTANCE, 0)
+
+	local goal = {CFrame = hrp.CFrame + move}
+
+	local tween = TweenService:Create(
+		hrp,
+		TweenInfo.new(DODGE_TIME, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+		goal
+	)
+
+	tween:Play()
+end
+
+-- Keybind
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.E then
+		if active then
+			disableObservation()
+		else
+			enableObservation()
+		end
+	end
+end)
+
+-- Detection loop
+RunService.RenderStepped:Connect(function()
+	if not active then return end
+	if enemyInFront() then
+		hoverDodge()
+	end
+end)
