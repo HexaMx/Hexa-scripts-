@@ -1,0 +1,17 @@
+-- Hide and seek extrme auto famr coins 
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+local runService = game:GetService("RunService")
+
+local collecting = true -- change to false to stop auto-collect
+
+while collecting do
+    for _, coin in pairs(workspace:GetDescendants()) do
+        if coin:IsA("BasePart") and coin.Name == "Credit" then
+            hrp.CFrame = coin.CFrame + Vector3.new(0, 3, 0) -- move player above coin
+        end
+    end
+    runService.RenderStepped:Wait()
+end
