@@ -1,0 +1,57 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+local targets = {
+    Flower1 = Color3.fromRGB(0, 170, 255), -- Blue
+    Flower2 = Color3.fromRGB(255, 50, 50)  -- Red
+}
+
+local highlights = {}
+
+local function createHighlight(obj, color)
+    if highlights[obj] then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = obj
+    highlight.FillColor = color
+    highlight.OutlineColor = color
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = obj
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = obj
+    billboard.Parent = obj
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = color
+    label.TextScaled = true
+    label.Font = Enum.Font.SourceSansBold
+    label.Text = ""
+    label.Parent = billboard
+
+    highlights[obj] = label
+end
+
+for _, obj in pairs(workspace:GetDescendants()) do
+    if obj:IsA("BasePart") and targets[obj.Name] then
+        createHighlight(obj, targets[obj.Name])
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    for obj, label in pairs(highlights) do
+        if obj and obj.Parent then
+            local distance = (hrp.Position - obj.Position).Magnitude
+            label.Text = string.format("%s (%.1f)", obj.Name, distance)
+        end
+    end
+end)
