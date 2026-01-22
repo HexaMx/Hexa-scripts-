@@ -1,0 +1,77 @@
+-- Blox Fruits Quest Tester (Educational/Private Server Only!)
+-- Paste into Executor (Fluxus, Delta, etc.)
+-- Press INSERT to toggle GUI
+-- Fires "StartQuest" remote — tests if quest activates (check quest UI)
+-- Common quests from decompiled scripts/wiki (2026)
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local CommF_ = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+
+-- Common Quest IDs (from scripts like LongHub, RenHub — exact strings for StartQuest)
+local Quests = {
+    {name = "JungleQuest", lvl = 1, mon = "Monkey", desc = "Lv10+ Jungle (Monkeys)"},
+    {name = "JungleQuest", lvl = 2, mon = "Gorilla", desc = "Lv15+ Jungle (Gorillas)"},
+    {name = "BartiloQuest", lvl = 1, mon = "Toga Warrior", desc = "Lv250+ Colosseum Quest"},
+    {name = "CitizenQuest", lvl = 1, mon = "Zombie", desc = "Lv950+ Graveyard (Zombies)"},
+    {name = "CitizenQuest", lvl = 2, mon = "Vampire", desc = "Lv975+ Graveyard (Vampires)"},
+    {name = "SnowBanditQuest", lvl = 1, mon = "Snow Bandit", desc = "Lv90+ Frozen Village"},
+    -- Add more from wiki/scripts as needed
+}
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("🧪 Quest Tester Hub", "BloodTheme")
+
+local Tab = Window:NewTab("Quests")
+local Section = Tab:NewSection("Fire StartQuest (Abandon first if active)")
+
+-- Function to fire quest
+local function StartQuest(q)
+    -- Abandon current quest if any (safe)
+    pcall(function()
+        CommF_:InvokeServer("AbandonQuest")
+    end)
+    task.wait(0.5)
+    
+    local result = CommF_:InvokeServer("StartQuest", q.name, q.lvl)
+    print("🧪 Fired:", q.name .. " Lv" .. q.lvl, "→", result or "No return")
+    
+    if result then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Quest Started!";
+            Text = q.desc;
+            Duration = 3;
+        })
+    end
+end
+
+-- Buttons for each quest
+for i, q in ipairs(Quests) do
+    Section:NewButton(q.desc, "Start " .. q.name .. " Lv" .. q.lvl, function()
+        StartQuest(q)
+    end)
+end
+
+Section:NewButton("Abandon Current Quest", "Clear active quest", function()
+    CommF_:InvokeServer("AbandonQuest")
+    print("❌ Quest abandoned!")
+end)
+
+Section:NewLabel("💡 Tips:")
+Section:NewLabel("• Private server only — for learning remotes!")
+Section:NewLabel("• Check quest bar after firing")
+Section:NewLabel("• Teleport to island/mobs manually")
+Section:NewLabel("• Quest IDs from decompiled auto-farm scripts")
+
+-- Toggle GUI with INSERT key
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Insert then
+        Library:ToggleUI()
+    end
+end)
+
+print("🧪 Quest Tester LOADED! Press INSERT for GUI")
+print("Test: JungleQuest1 → Kills Monkeys for XP/Money")
